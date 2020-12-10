@@ -34,7 +34,7 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
 
     // The current balance from success auctions
     uint public balance = 0;
-    uint lastBalanceIndex = 0;
+    uint public lastBalanceIndex = 0;
 
     uint public lockedRoundIndex = type(uint).max;
 
@@ -140,8 +140,8 @@ contract BurnAuction is IConsensusProvider, IBurnAuction {
     function updateBalance() public {
         if (lastBalanceIndex == currentRound()) return;
         uint newBalance = balance;
-        uint x = lastBalanceIndex + 1;
-        for (; x <= currentRound(); x++) {
+        uint x = lastBalanceIndex;
+        for (; x <= currentRound(); ++x) {
             if (highestBidPerRound[x].amount == 0) continue;
             newBalance += highestBidPerRound[x].amount;
             if (gasleft() < 3000) {

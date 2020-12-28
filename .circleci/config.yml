@@ -15,7 +15,7 @@ jobs:
       - run: yarn images:pull
       - run: yarn lint
       - run:
-        name: Build
-        command: yarn build
-        no_output_timeout: 30m
+          name: Build
+          command: yarn build
+          no_output_timeout: 30m
       - run: yarn test

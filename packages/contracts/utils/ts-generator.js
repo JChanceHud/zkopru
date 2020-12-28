@@ -21,21 +21,23 @@ const zkopruTS = `import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'
 ${importContracts([
   'ICoordinatable',
-  'IDepositChallenge',
-  'IHeaderChallenge',
-  'IMigratable',
-  'IMigrationChallenge',
-  'IRollUpChallenge',
-  'IRollUpable',
+  'IChallengeable',
   'ISetupWizard',
-  'ITxChallenge',
+  'IDepositValidator',
+  'IHeaderValidator',
+  'IMigratable',
+  'IMigrationValidator',
+  'IUtxoTreeValidator',
+  'IWithdrawalTreeValidator',
+  'INullifierTreeValidator',
+  'ITxValidator',
   'IUserInteractable',
-  'ZkOptimisticRollUp',
+  'Zkopru',
 ])}
 import { Layer1 } from './layer1'
 
-export class ZkOPRUContract {
-  upstream: ZkOptimisticRollUp
+export class ZkopruContract {
+  upstream: Zkopru
 
   coordinator: ICoordinatable
 
@@ -43,50 +45,39 @@ export class ZkOPRUContract {
 
   migrator: IMigratable
 
-  challenger: {
-    deposit: IDepositChallenge
-    migration: IMigrationChallenge
-    header: IHeaderChallenge
-    tx: ITxChallenge
-    rollUp: IRollUpChallenge
-    rollUpProof: IRollUpable
+  challenger: IChallengeable
+
+  validators: {
+    deposit: IDepositValidator
+    migration: IMigrationValidator
+    header: IHeaderValidator
+    tx: ITxValidator
+    utxoTree: IUtxoTreeValidator
+    withdrawalTree: IWithdrawalTreeValidator
+    nullifierTree: INullifierTreeValidator
   }
 
   setup: ISetupWizard
 
   constructor(web3: Web3, address: string, option?: ContractOptions) {
-    this.upstream = Layer1.getZkOptimisticRollUp(web3, address, option)
+    this.upstream = Layer1.getZkopru(web3, address, option)
     this.coordinator = Layer1.getICoordinatable(web3, address, option)
     this.user = Layer1.getIUserInteractable(web3, address, option)
     this.migrator = Layer1.getIMigratable(web3, address, option)
-    this.challenger = {
-      deposit: Layer1.getIDepositChallenge(web3, address, option),
-      migration: Layer1.getIMigrationChallenge(web3, address, option),
-      header: Layer1.getIHeaderChallenge(web3, address, option),
-      tx: Layer1.getITxChallenge(web3, address, option),
-      rollUp: Layer1.getIRollUpChallenge(web3, address, option),
-      rollUpProof: Layer1.getIRollUpable(web3, address, option),
+    this.challenger = Layer1.getIChallengeable(web3, address, option)
+    this.validators = {
+      deposit: Layer1.getIDepositValidator(web3, address, option),
+      migration: Layer1.getIMigrationValidator(web3, address, option),
+      header: Layer1.getIHeaderValidator(web3, address, option),
+      tx: Layer1.getITxValidator(web3, address, option),
+      utxoTree: Layer1.getIUtxoTreeValidator(web3, address, option),
+      withdrawalTree: Layer1.getIWithdrawalTreeValidator(web3, address, option),
+      nullifierTree: Layer1.getINullifierTreeValidator(web3, address, option),
     }
     this.setup = Layer1.getISetupWizard(web3, address, option)
   }
 }`
 
-const list = [
-  'ICoordinatable',
-  'IDepositChallenge',
-  'IHeaderChallenge',
-  'IMigratable',
-  'IMigrationChallenge',
-  'IRollUpChallenge',
-  'IRollUpable',
-  'ISetupWizard',
-  'ITxChallenge',
-  'IUserInteractable',
-  'ERC20',
-  'ERC721',
-  'IERC721Enumerable',
-  'ZkOptimisticRollUp',
-]
 const importABIs = list =>
   `${abis.reduce((prev, name) => {
     if (!list.includes(name)) return prev
@@ -108,6 +99,26 @@ const staticClasses = list =>
 `
   }, '')}`
 
+const list = [
+  'IBurnAuction',
+  'IConsensusProvider',
+  'ICoordinatable',
+  'IChallengeable',
+  'IDepositValidator',
+  'IHeaderValidator',
+  'IMigratable',
+  'IMigrationValidator',
+  'IUtxoTreeValidator',
+  'IWithdrawalTreeValidator',
+  'INullifierTreeValidator',
+  'ISetupWizard',
+  'ITxValidator',
+  'IUserInteractable',
+  'ERC20',
+  'ERC721',
+  'IERC721Enumerable',
+  'Zkopru',
+]
 const layer1TS = `/* eslint-disable @typescript-eslint/no-explicit-any */
 import Web3 from 'web3'
 import { ContractOptions } from 'web3-eth-contract'

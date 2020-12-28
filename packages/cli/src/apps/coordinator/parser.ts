@@ -1,4 +1,5 @@
 import yargs from 'yargs'
+import { DEFAULT } from '../../config'
 
 export const { argv } = yargs
   .scriptName('zkopru-coordinator')
@@ -7,7 +8,7 @@ export const { argv } = yargs
     address: {
       type: 'string',
       alias: 'a',
-      default: '0x98a9b814B423B4D17Cd612cD7943986aB9BF8c41',
+      default: DEFAULT.address,
     },
     bootstrap: {
       type: 'boolean',
@@ -17,7 +18,7 @@ export const { argv } = yargs
     websocket: {
       type: 'string',
       alias: 'ws',
-      default: 'ws://goerli.zkopru.network:8546',
+      default: DEFAULT.websocket,
     },
     sqlite: {
       type: 'string',
@@ -27,15 +28,15 @@ export const { argv } = yargs
     },
     maxBytes: {
       type: 'number',
-      default: 131072,
+      default: DEFAULT.maxBytes,
     },
     priceMultiplier: {
       type: 'number',
-      default: 48,
+      default: DEFAULT.priceMultiplier,
     },
     port: {
       type: 'number',
-      default: 8888,
+      default: DEFAULT.port,
     },
     config: {
       type: 'string',

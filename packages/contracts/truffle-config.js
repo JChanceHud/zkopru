@@ -116,7 +116,7 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-      version: '0.6.7',
+      version: '0.6.12',
       evmVersion: 'istanbul',
       settings: {
         optimize: true,
@@ -133,8 +133,7 @@ module.exports = {
       // }
     },
     external: {
-      command:
-        'node utils/mimc-generator.js && node utils/poseidon-generator.js',
+      command: 'node utils/poseidon-generator.js',
       targets: [
         {
           path: 'build/generated/*.json',

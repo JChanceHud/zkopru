@@ -15,13 +15,19 @@ interface EventOptions {
 
 export class Migratable extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): Migratable
+
   methods: {
     CHALLENGE_PERIOD(): TransactionObject<string>
 
-    MAX_UTXO_PER_TREE(): TransactionObject<string>
+    MAX_BLOCK_SIZE(): TransactionObject<string>
 
-    MAX_WITHDRAWAL_PER_TREE(): TransactionObject<string>
+    MAX_UTXO(): TransactionObject<string>
+
+    MAX_VALIDATION_GAS(): TransactionObject<string>
+
+    MAX_WITHDRAWAL(): TransactionObject<string>
 
     MINIMUM_STAKE(): TransactionObject<string>
 
@@ -43,79 +49,20 @@ export class Migratable extends Contract {
 
     allowedMigrants(arg0: string): TransactionObject<boolean>
 
-    committedDeposits(
-      massDepositHash: string | number[],
-    ): TransactionObject<string>
+    consensusProvider(): TransactionObject<string>
 
-    finalizedUTXORoots(utxoRoot: string | number[]): TransactionObject<boolean>
+    owner(): TransactionObject<string>
 
-    genesis(): TransactionObject<string>
+    proxied(arg0: string | number[]): TransactionObject<string>
 
-    getVk(
-      numOfInputs: number | string,
-      numOfOutputs: number | string,
-    ): TransactionObject<{
-      alfa1: string[]
-      beta2: string[][]
-      gamma2: string[][]
-      delta2: string[][]
-      ic: string[][]
-      0: string[]
-      1: string[][]
-      2: string[][]
-      3: string[][]
-      4: string[][]
-    }>
+    renounceOwnership(): TransactionObject<void>
 
-    latest(): TransactionObject<string>
+    transferOwnership(newOwner: string): TransactionObject<void>
 
-    massDepositId(): TransactionObject<string>
-
-    migrations(migrationHash: string | number[]): TransactionObject<boolean>
-
-    parentOf(header: string | number[]): TransactionObject<string>
-
-    proposals(
-      proposalId: string | number[],
-    ): TransactionObject<{
-      header: string
-      challengeDue: string
-      slashed: boolean
-      0: string
-      1: string
-      2: boolean
-    }>
-
-    proposedBlocks(): TransactionObject<string>
-
-    proposers(
-      addr: string,
-    ): TransactionObject<{
-      stake: string
-      reward: string
-      exitAllowance: string
-      0: string
-      1: string
-      2: string
-    }>
-
-    stagedDeposits(): TransactionObject<{
-      merged: string
-      fee: string
-      0: string
-      1: string
-    }>
-
-    stagedSize(): TransactionObject<string>
-
-    utxoRootOf(header: string | number[]): TransactionObject<string>
-
-    withdrawalRootOf(header: string | number[]): TransactionObject<string>
-
-    withdrawn(leaf: string | number[]): TransactionObject<boolean>
+    validators(arg0: string | number[]): TransactionObject<string>
 
     migrateTo(
-      checksum: string | number[],
+      proposalChecksum: string | number[],
       arg1: string | number[],
     ): TransactionObject<void>
 
@@ -125,6 +72,7 @@ export class Migratable extends Contract {
       fee: number | string,
     ): TransactionObject<void>
   }
+
   events: {
     NewMassMigration: ContractEvent<{
       checksum: string
@@ -135,6 +83,12 @@ export class Migratable extends Contract {
       1: string
       2: string
       3: string
+    }>
+    OwnershipTransferred: ContractEvent<{
+      previousOwner: string
+      newOwner: string
+      0: string
+      1: string
     }>
     allEvents: (options?: EventOptions, cb?: Callback<EventLog>) => EventEmitter
   }

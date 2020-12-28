@@ -55,9 +55,12 @@ export {
   BootstrapCreateInput,
   Config,
   Deposit,
+  Utxo,
   MassDeposit,
   Proposal,
   Withdrawal,
+  TokenRegistry,
+  Tracker,
 } from '../generated/base'
 
 export interface MockupDB {
@@ -106,7 +109,7 @@ export class DB {
     await this.lock.acquire([Lock.EXCLUSIVE], async () => {
       result = await query(this.prisma)
     })
-    if (result === undefined) throw Error('Failed to write data from db')
+    if (result === undefined) throw Error('Failed to write data to db')
     return result
   }
 
@@ -138,7 +141,7 @@ export class DB {
   }
 
   static async mockup(name?: string): Promise<MockupDB> {
-    const dbName = name || `${v4()}.db`
+    const dbName = name || `.mockup/${v4()}.db`
     const dbPath = path.join(path.resolve('.'), dbName)
     const dirPath = path.join(dbPath, '../')
     fs.mkdirSync(dirPath, { recursive: true })
@@ -151,7 +154,7 @@ export class DB {
     })
     const terminate = async () => {
       fs.unlinkSync(dbPath)
-      await db.prisma.disconnect()
+      await db.prisma.$disconnect()
     }
     return { db, terminate }
   }

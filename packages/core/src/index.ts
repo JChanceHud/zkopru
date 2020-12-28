@@ -1,13 +1,13 @@
-export { ZkOPRUNode, NetworkStatus } from './zkopru-node'
-export { FullNode } from './full-node'
-export { LightNode } from './light-node'
-export { Verifier, VerifyOption } from './verifier'
-export { Synchronizer } from './synchronizer'
+export { ZkopruNode } from './node/zkopru-node'
+export { NetworkStatus } from './node/synchronizer'
+export { FullNode } from './node/full-node'
+export { LightNode } from './node/light-node'
+export { Synchronizer } from './node/synchronizer'
 export {
   BootstrapData,
   BootstrapHelper,
   HttpBootstrapHelper,
-} from './bootstrap'
+} from './node/bootstrap'
 export {
   Block,
   Header,
@@ -26,4 +26,6 @@ export {
   getMassMigrations,
   sqlToHeader,
 } from './block'
-export { L1Contract } from './layer1'
+export { L1Contract } from './context/layer1'
+export { L2Chain } from './context/layer2'
+export { SNARKVerifier, verifyingKeyIdentifier } from './snark/snark-verifier'

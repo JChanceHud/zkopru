@@ -19,7 +19,6 @@ describe('block.ts', () => {
     const dummySelector = 'aaaaaaaa'
     const lengthToHex = hexify(serializedBlock.length, 32).slice(2)
     const paramPosition = hexify(32, 32).slice(2)
-    console.log('length to hex', lengthToHex)
     const dummyTx: Transaction = {
       hash: 'dummyhash',
       nonce: 1,
@@ -40,7 +39,6 @@ describe('block.ts', () => {
     const dHeader = deserializedBlock.header
     expect(dHeader.proposer).toStrictEqual(header.proposer)
     expect(dHeader.parentBlock).toStrictEqual(header.parentBlock)
-    expect(dHeader.metadata).toStrictEqual(header.metadata)
     expect(dHeader.fee).toStrictEqual(header.fee)
     expect(dHeader.utxoRoot).toStrictEqual(header.utxoRoot)
     expect(dHeader.utxoIndex).toStrictEqual(header.utxoIndex)

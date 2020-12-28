@@ -1,5 +1,8 @@
+// This is an auto generated schema for each datasource.
+
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["transactionApi"]
   binaryTargets = ["darwin", "windows", "native", "linux-musl", "debian-openssl-1.0.x", "debian-openssl-1.1.x"]
   output = "../generated/postgres-migrator"
 }
@@ -24,7 +27,7 @@ model EncryptedWallet {
 
 model Keystore {
   address String @id
-  pubKey String
+  zkAddress String
   encrypted String // stringified json
 }
 
@@ -39,13 +42,19 @@ model Config {
   challengePeriod Int
   minimumStake String
   referenceDepth Int
-  maxUtxoPerTree String
-  maxWithdrawalPerTree String
+  maxUtxo String
+  maxWithdrawal String
   utxoSubTreeDepth Int
   utxoSubTreeSize Int
   withdrawalSubTreeDepth Int
   withdrawalSubTreeSize Int
   @@id([networkId, chainId, address])
+}
+
+model Tracker {
+  id Int @id @default(autoincrement())
+  viewer String? @unique
+  address String? @unique
 }
 
 model Proposal {
@@ -66,13 +75,22 @@ model Block {
   header Header @relation(fields: [hash], references: [hash])
   proposal Proposal
   bootstrap Bootstrap?
+  slash Slash?
+}
+
+model Slash {
+  hash String @id
+  proposer String
+  reason String
+  executionTx String
+  slashedAt Int
+  block Block @relation(fields: [hash], references: [hash])
 }
 
 model Header {
   hash String @id
   proposer String
   parentBlock String
-  metadata String
   fee String
   utxoRoot String
   utxoIndex String
@@ -87,10 +105,8 @@ model Header {
 model Bootstrap {
   id String @id @default(uuid())
   blockHash String? @unique
-  utxoTreeIndex Int
   // utxoBootstrap String[]
   utxoBootstrap String // jsonified arr : sqlite does not support arr
-  withdrawalTreeIndex Int
   // withdrawalBootstrap String[]
   withdrawalBootstrap String //jsonified arr : sqlite does not support arr
   block Block? @relation(fields: [blockHash], references: [hash])
@@ -116,7 +132,7 @@ model Deposit {
 model Utxo {
   hash String @id
   eth String?
-  pubKey String?
+  owner String?
   salt String?
   tokenAddr String?
   erc20Amount String?
@@ -126,14 +142,13 @@ model Utxo {
   index String?
   nullifier String?
   usedAt String?
-  tree LightTree? @relation(fields: [treeId], references: [id])
 }
 
 model Withdrawal {
   hash String @id
   withdrawalHash String
   eth String
-  pubKey String?
+  owner String?
   salt String?
   tokenAddr String
   erc20Amount String
@@ -146,13 +161,12 @@ model Withdrawal {
   includedIn String?
   prepayer String?
   siblings String? // stringified str[]
-  tree LightTree? @relation(fields: [treeId], references: [id])
 }
 
 model Migration {
   hash String @id
   eth String?
-  pubKey String?
+  owner String?
   salt String?
   tokenAddr String?
   erc20Amount String?
@@ -163,7 +177,6 @@ model Migration {
   treeId String?
   index String?
   usedFor String?
-  tree LightTree? @relation(fields: [treeId], references: [id])
 }
 
 model TreeNode {
@@ -176,9 +189,7 @@ model TreeNode {
 
 model LightTree {
   id String @default(uuid()) @unique
-  species Int // 0: utxo 1: withdrawal
-  treeIndex Int
-  block String?
+  species Int @unique // 0: utxo 1: withdrawal
   // rollup sync data
   start String
   end String
@@ -186,13 +197,12 @@ model LightTree {
   root String
   index String
   siblings String // stringified str[]
-  @@id([species, treeIndex])
 }
 
-model NullifierTree {
-  id String @id @default(uuid())
-  treeIndex Int @unique
-  block String?
-  root String
-  siblings String // stringified str[]
+model TokenRegistry {
+  address String @id
+  isERC20 Boolean
+  isERC721 Boolean
+  identifier Int
+  blockNumber Int
 }

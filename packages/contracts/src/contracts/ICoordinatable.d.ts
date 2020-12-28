@@ -15,13 +15,17 @@ interface EventOptions {
 
 export class ICoordinatable extends Contract {
   constructor(jsonInterface: any[], address?: string, options?: ContractOptions)
+
   clone(): ICoordinatable
+
   methods: {
     register(): TransactionObject<void>
 
     deregister(): TransactionObject<void>
 
-    propose(submission: string | number[]): TransactionObject<void>
+    stake(coordinator: string): TransactionObject<void>
+
+    propose(blockData: string | number[]): TransactionObject<void>
 
     finalize(finalization: string | number[]): TransactionObject<void>
 
@@ -29,8 +33,13 @@ export class ICoordinatable extends Contract {
 
     commitMassDeposit(): TransactionObject<void>
 
+    registerERC20(tokenAddr: string): TransactionObject<void>
+
+    registerERC721(tokenAddr: string): TransactionObject<void>
+
     isProposable(proposerAddr: string): TransactionObject<boolean>
   }
+
   events: {
     Finalized: ContractEvent<string>
     MassDepositCommit: ContractEvent<{
@@ -41,6 +50,8 @@ export class ICoordinatable extends Contract {
       1: string
       2: string
     }>
+    NewErc20: ContractEvent<string>
+    NewErc721: ContractEvent<string>
     NewProposal: ContractEvent<{
       proposalNum: string
       blockHash: string

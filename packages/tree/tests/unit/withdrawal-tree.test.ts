@@ -13,7 +13,7 @@ import {
   verifyProof,
 } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
-import { address } from '~dataset/testset-keys'
+import { address } from '~dataset/testset-predefined'
 
 describe('withdrawal tree unit test', () => {
   let withdrawalTree: WithdrawalTree
@@ -34,7 +34,7 @@ describe('withdrawal tree unit test', () => {
   const withdrawalTreeInitialData = {
     root: genesisRoot(keccakHasher(depth)),
     index: Field.zero,
-    siblings: preHashes,
+    siblings: preHashes.slice(0, -1),
   }
   let mockup: MockupDB
   beforeAll(async () => {

@@ -7,7 +7,7 @@ import { toBN } from 'web3-utils'
 import { hexify } from '@zkopru/utils'
 import { DB, TreeSpecies } from '@zkopru/prisma'
 import { Hasher } from './hasher'
-import { MerkleProof, startingLeafProof } from './merkle-proof'
+import { MerkleProof, startingLeafProof, verifyProof } from './merkle-proof'
 
 export interface Leaf<T extends Field | BN> {
   hash: T
@@ -18,7 +18,6 @@ export interface Leaf<T extends Field | BN> {
 export interface TreeMetadata<T extends Field | BN> {
   id: string
   species: number
-  index: number
   start: T
   end: T
 }
@@ -90,28 +89,11 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     return [...this.data.siblings].slice(0, this.depth)
   }
 
-  async includedInBlock(hash: string) {
-    await this.db.write(prisma =>
-      prisma.lightTree.update({
-        where: {
-          species_treeIndex: {
-            species: this.species,
-            treeIndex: this.metadata.index,
-          },
-        },
-        data: {
-          block: hash,
-        },
-      }),
-    )
-  }
-
   async init() {
     const saveResult = await this.db.write(prisma =>
       prisma.lightTree.create({
         data: {
           species: this.species,
-          treeIndex: this.metadata.index,
           start: this.metadata.start.toString(10),
           end: this.metadata.end.toString(10),
           root:
@@ -273,12 +255,16 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     }
     const siblings = await this._getSiblings(leafIndex)
     const root = this.root()
-    return {
+    const proof = {
       root,
       index: leafIndex,
       leaf: hash,
       siblings,
     }
+    if (!verifyProof(this.config.hasher, proof)) {
+      throw Error('Created invalid merkle proof')
+    }
+    return proof
   }
 
   private async _getSiblings(leafIndex: T): Promise<T[]> {
@@ -302,15 +288,13 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       } else {
         // should find the node value
         const cached = cachedSiblings[hexify(siblingNodeIndex)]
-        if (this.zero instanceof Field) {
+        if (!cached) {
+          siblings[level] = this.config.hasher.preHash[level]
+        } else if (this.zero instanceof Field) {
           siblings[level] = Field.from(cached)
         } else {
           siblings[level] = toBN(cached)
         }
-        if (siblings[level] === undefined)
-          throw Error(
-            'Sibling was not cached. Make sure you added your public key before scanning',
-          )
       }
     }
     return siblings
@@ -359,7 +343,6 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       const index = (leaf.hash instanceof Field
         ? Field.from(i).add(start)
         : new BN(i).add(start)) as T
-      // TODO batch transaction
       if (leaf.shouldTrack) {
         trackingLeaves.push(index)
       }
@@ -437,12 +420,7 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     }
     await this.db.write(prisma =>
       prisma.lightTree.upsert({
-        where: {
-          species_treeIndex: {
-            species: this.species,
-            treeIndex: this.metadata.index,
-          },
-        },
+        where: { species: this.species },
         update: {
           ...rollUpSync,
           ...rollUpSnapshot,
@@ -451,32 +429,32 @@ export abstract class LightRollUpTree<T extends Field | BN> {
           ...rollUpSync,
           ...rollUpSnapshot,
           species: this.species,
-          treeIndex: this.metadata.index,
         },
       }),
     )
     // update cached nodes
-    // TODO prisma batch transaction
-    for (const nodeIndex of Object.keys(cached)) {
-      await this.db.write(prisma =>
-        prisma.treeNode.upsert({
-          where: {
-            treeId_nodeIndex: {
+    await this.db.write(prisma =>
+      prisma.$transaction(
+        Object.keys(cached).map(nodeIndex =>
+          prisma.treeNode.upsert({
+            where: {
+              treeId_nodeIndex: {
+                treeId: this.metadata.id,
+                nodeIndex,
+              },
+            },
+            update: {
+              value: cached[nodeIndex],
+            },
+            create: {
               treeId: this.metadata.id,
               nodeIndex,
+              value: cached[nodeIndex],
             },
-          },
-          update: {
-            value: cached[nodeIndex],
-          },
-          create: {
-            treeId: this.metadata.id,
-            nodeIndex,
-            value: cached[nodeIndex],
-          },
-        }),
-      )
-    }
+          }),
+        ),
+      ),
+    )
     return {
       root,
       index: end,
@@ -510,16 +488,8 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       throw Error('bootstrapped with invalid merkle proof')
     }
     // If it does not have force update config, check existing merkle tree
-    const where = {
-      species_treeIndex: {
-        species,
-        treeIndex: metadata.index,
-      },
-    }
     const exisingTree = await db.read(prisma =>
-      prisma.lightTree.findOne({
-        where,
-      }),
+      prisma.lightTree.findOne({ where: { species } }),
     )
     if (
       !config.forceUpdate &&
@@ -530,7 +500,6 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     // Create or update the merkle tree using the "bootstrapTree" preset query
     const tree = {
       species,
-      treeIndex: metadata.index,
       // rollup sync data
       start: data.index.toString(10),
       end: data.index.toString(10),
@@ -546,14 +515,14 @@ export abstract class LightRollUpTree<T extends Field | BN> {
     }
     const newTree = await db.write(prisma =>
       prisma.lightTree.upsert({
-        where,
+        where: { species },
         update: tree,
         create: {
           ...tree,
         },
       }),
     )
-    const { start, end, treeIndex } = newTree
+    const { start, end } = newTree
     // Return tree object
     let _start: T
     let _end: T
@@ -569,7 +538,6 @@ export abstract class LightRollUpTree<T extends Field | BN> {
       species,
       metadata: {
         ...metadata,
-        index: treeIndex,
         start: _start,
         end: _end,
       },

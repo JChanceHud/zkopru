@@ -8,7 +8,16 @@ export { logger, logStream } from './logger'
 
 export { PromptApp } from './prompt'
 
-export { readFromContainer, getContainer } from './docker'
+export { Worker } from './worker'
+
+export {
+  readFromContainer,
+  copyFromContainer,
+  getContainer,
+  buildAndGetContainer,
+  pullAndGetContainer,
+  pullOrBuildAndGetContainer,
+} from './docker'
 
 const units: Unit[] = [
   'noether',
@@ -45,6 +54,7 @@ export function parseStringToUnit(
   defaultUnit?: Unit,
 ): { val: string; unit: Unit } {
   const val = parseFloat(str).toString()
+  // eslint-disable-next-line no-useless-escape
   const unitParser = str.match(/[\d.\-\+]*\s*(.*)/)
   const parsedUnit = (unitParser ? unitParser[1] : '') as Unit
   let unit = defaultUnit || 'ether'
@@ -120,10 +130,6 @@ export function hexToBuffer(hex: string, len?: number): Buffer {
     throw Error('Exceeds the given buffer size')
   }
   return Buffer.concat([Buffer.alloc(len - buff.length).fill(0), buff])
-}
-
-export function verifyingKeyIdentifier(nI: number, nO: number): string {
-  return soliditySha3Raw(nI, nO)
 }
 
 export function hexify(
@@ -265,5 +271,20 @@ export function toArrayBuffer(buff: Buffer): ArrayBuffer {
 export function sleep(ms: number) {
   return new Promise(res => {
     setTimeout(res, ms)
+  })
+}
+
+export function jestExtendToCompareBigNumber(expect: jest.Expect) {
+  expect.extend({
+    toBe(received: BN, expected: BN) {
+      const pass = received.eq(expected)
+      const message = pass
+        ? `expected ${received.toString()} not to be equal to ${expected.toString()}`
+        : `expected ${received.toString()} to be equal to ${expected.toString()}`
+      return {
+        message: () => message,
+        pass,
+      }
+    },
   })
 }

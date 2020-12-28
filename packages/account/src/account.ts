@@ -1,83 +1,76 @@
 import Web3 from 'web3'
-// import { Accounts } from 'web3-eth-accounts'
 import { Account, EncryptedKeystoreV3Json, AddAccount } from 'web3-core'
 import { Field, Point, EdDSA, signEdDSA, verifyEdDSA } from '@zkopru/babyjubjub'
 import { Keystore } from '@zkopru/prisma'
-import { ZkTx, Utxo } from '@zkopru/transaction'
 import { hexify } from '@zkopru/utils'
+import createKeccak from 'keccak'
 import assert from 'assert'
+import { ZkViewer } from './viewer'
 
-export class ZkAccount {
-  private snarkPK: Field
+export class ZkAccount extends ZkViewer {
+  private p: Field // spending key
 
   private ethPK: string
 
-  address: string
-
-  pubKey: Point
+  ethAddress: string
 
   ethAccount: Account
 
   constructor(pk: Buffer | string | Account) {
+    let ethPK: string
+    let p: Field
+    let ethAccount: Account
     if (pk instanceof Buffer || typeof pk === 'string') {
       if (pk instanceof Buffer) {
-        this.ethPK = hexify(pk, 32)
-        this.snarkPK = Field.fromBuffer(pk)
+        ethPK = hexify(pk, 32)
+        p = Field.fromBuffer(pk)
       } else {
-        this.ethPK = hexify(pk, 32)
-        this.snarkPK = Field.from(pk)
+        ethPK = hexify(pk, 32)
+        p = Field.from(pk)
       }
       const web3 = new Web3()
-      this.ethAccount = web3.eth.accounts.privateKeyToAccount(this.ethPK)
+      ethAccount = web3.eth.accounts.privateKeyToAccount(ethPK)
     } else {
-      this.ethPK = hexify(pk.privateKey, 32)
-      this.snarkPK = Field.from(pk.privateKey)
-      this.ethAccount = pk
+      ethPK = hexify(pk.privateKey, 32)
+      p = Field.from(pk.privateKey)
+      ethAccount = pk
     }
-    this.address = this.ethAccount.address.toLowerCase()
-    this.pubKey = Point.fromPrivKey(this.snarkPK.toHex(32))
+    const pG = Point.fromPrivKey(p.toHex(32))
+    // https://github.com/zkopru-network/zkopru/issues/34#issuecomment-666988505
+    // Note: viewing key can be derived using another method. This is just for the convenience
+    // to make it easy to restore spending key & viewing key together from a mnemonic source in
+    // a deterministic way
+    const n = Field.from(
+      createKeccak('keccak256')
+        .update(p.toBytes32().toBuffer())
+        .digest(),
+    )
+    super(pG, n)
+    this.p = p
+    this.ethPK = ethPK
+    this.ethAddress = ethAccount.address
+    this.ethAccount = ethAccount
   }
 
   toKeystoreSqlObj(password: string): Keystore {
     return {
-      pubKey: hexify(this.pubKey.encode()),
-      address: this.address,
+      zkAddress: this.zkAddress.toString(),
+      address: this.ethAddress,
       encrypted: JSON.stringify(this.ethAccount.encrypt(password)),
     }
   }
 
   signEdDSA(msg: Field): EdDSA {
-    const signature = signEdDSA({ msg, privKey: this.snarkPK.toHex(32) })
-    assert(verifyEdDSA(msg, signature, this.pubKey))
+    const signature = signEdDSA({ msg, privKey: this.p.toHex(32) })
+    assert(verifyEdDSA(msg, signature, this.getEdDSAPoint()))
     return signature
   }
 
   toAddAccount(): AddAccount {
     return {
-      address: this.address,
+      address: this.ethAddress,
       privateKey: this.ethPK,
     }
-  }
-
-  decrypt(zkTx: ZkTx): Utxo | undefined {
-    const { memo } = zkTx
-    if (!memo) {
-      return
-    }
-    let note: Utxo | undefined
-    for (const outflow of zkTx.outflow) {
-      try {
-        note = Utxo.decrypt({
-          utxoHash: outflow.note,
-          memo,
-          privKey: this.snarkPK.toHex(32),
-        })
-      } catch (err) {
-        console.error(err)
-      }
-      if (note) break
-    }
-    return note ? Utxo.from(note) : undefined
   }
 
   static fromEncryptedKeystoreV3Json(

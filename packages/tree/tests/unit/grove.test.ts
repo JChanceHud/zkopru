@@ -6,7 +6,7 @@ import { DB, MockupDB } from '~prisma'
 import { Field } from '~babyjubjub'
 import { Grove, poseidonHasher, keccakHasher, Leaf } from '~tree'
 import { utxos } from '~dataset/testset-utxos'
-import { address, accounts } from '~dataset/testset-keys'
+import { accounts, address } from '~dataset/testset-predefined'
 
 /* eslint-disable jest/no-hooks */
 describe('grove full sync grove()', () => {
@@ -26,7 +26,7 @@ describe('grove full sync grove()', () => {
       nullifierHasher: keccakHasher(254),
       fullSync: true,
       forceUpdate: !false,
-      pubKeysToObserve: [accounts.alice.pubKey],
+      zkAddressesToObserve: [accounts.alice.zkAddress],
       addressesToObserve: [address.USER_A],
     })
     await fullSyncGrvoe.init()
@@ -39,7 +39,7 @@ describe('grove full sync grove()', () => {
   })
   describe('setPubKeysToObserve()', () => {
     it('should register public keys to keep track for the inclusion proof for tx building', () => {
-      fullSyncGrvoe.setPubKeysToObserve([accounts.alice.pubKey])
+      fullSyncGrvoe.setZkAddressesToObserve([accounts.alice.zkAddress])
     })
   })
   describe('setAddressesToObserve()', () => {
@@ -50,10 +50,10 @@ describe('grove full sync grove()', () => {
   describe('dryPatch', () => {
     it('should not update the grove', async () => {
       const prevResult = {
-        utxoRoot: fullSyncGrvoe.latestUTXOTree().root(),
-        utxoIndex: fullSyncGrvoe.latestUTXOTree().latestLeafIndex(),
-        withdrawalRoot: fullSyncGrvoe.latestWithdrawalTree().root(),
-        withdrawalIndex: fullSyncGrvoe.latestWithdrawalTree().latestLeafIndex(),
+        utxoRoot: fullSyncGrvoe.utxoTree.root(),
+        utxoIndex: fullSyncGrvoe.utxoTree.latestLeafIndex(),
+        withdrawalRoot: fullSyncGrvoe.withdrawalTree.root(),
+        withdrawalIndex: fullSyncGrvoe.withdrawalTree.latestLeafIndex(),
         nullifierRoot: await fullSyncGrvoe.nullifierTree?.root(),
       }
       const utxosToAppend: Leaf<Field>[] = [
@@ -79,10 +79,10 @@ describe('grove full sync grove()', () => {
       }
       await fullSyncGrvoe.dryPatch(patch)
       const postResult = {
-        utxoRoot: fullSyncGrvoe.latestUTXOTree().root(),
-        utxoIndex: fullSyncGrvoe.latestUTXOTree().latestLeafIndex(),
-        withdrawalRoot: fullSyncGrvoe.latestWithdrawalTree().root(),
-        withdrawalIndex: fullSyncGrvoe.latestWithdrawalTree().latestLeafIndex(),
+        utxoRoot: fullSyncGrvoe.utxoTree.root(),
+        utxoIndex: fullSyncGrvoe.utxoTree.latestLeafIndex(),
+        withdrawalRoot: fullSyncGrvoe.withdrawalTree.root(),
+        withdrawalIndex: fullSyncGrvoe.withdrawalTree.latestLeafIndex(),
         nullifierRoot: await fullSyncGrvoe.nullifierTree?.root(),
       }
       expect(prevResult.utxoRoot.eq(postResult.utxoRoot)).toBe(true)
@@ -122,10 +122,10 @@ describe('grove full sync grove()', () => {
       const expected = await fullSyncGrvoe.dryPatch(patch)
       await fullSyncGrvoe.applyGrovePatch(patch)
       const result = {
-        utxoRoot: fullSyncGrvoe.latestUTXOTree().root(),
-        utxoIndex: fullSyncGrvoe.latestUTXOTree().latestLeafIndex(),
-        withdrawalRoot: fullSyncGrvoe.latestWithdrawalTree().root(),
-        withdrawalIndex: fullSyncGrvoe.latestWithdrawalTree().latestLeafIndex(),
+        utxoRoot: fullSyncGrvoe.utxoTree.root(),
+        utxoIndex: fullSyncGrvoe.utxoTree.latestLeafIndex(),
+        withdrawalRoot: fullSyncGrvoe.withdrawalTree.root(),
+        withdrawalIndex: fullSyncGrvoe.withdrawalTree.latestLeafIndex(),
         nullifierRoot: await fullSyncGrvoe.nullifierTree?.root(),
       }
       expect(result.utxoRoot.eq(expected.utxoTreeRoot)).toBe(true)
@@ -141,17 +141,15 @@ describe('grove full sync grove()', () => {
   })
   describe('light sync grove - applyBootstrap()', () => {
     it('should update the grove using bootstrap data', async () => {
-      const latestUtxoTree = fullSyncGrvoe.latestUTXOTree()
-      const latestWithdrawalTree = fullSyncGrvoe.latestWithdrawalTree()
+      const { utxoTree } = fullSyncGrvoe
+      const { withdrawalTree } = fullSyncGrvoe
       const bootstrapData = {
-        utxoTreeIndex: latestUtxoTree.metadata.index,
         utxoStartingLeafProof: {
-          ...latestUtxoTree.getStartingLeafProof(),
+          ...utxoTree.getStartingLeafProof(),
           leaf: Field.zero,
         },
-        withdrawalTreeIndex: latestWithdrawalTree.metadata.index,
         withdrawalStartingLeafProof: {
-          ...latestWithdrawalTree.getStartingLeafProof(),
+          ...withdrawalTree.getStartingLeafProof(),
           leaf: toBN(0),
         },
       }
@@ -168,34 +166,28 @@ describe('grove full sync grove()', () => {
         nullifierHasher: keccakHasher(254),
         fullSync: false,
         forceUpdate: !true,
-        pubKeysToObserve: [accounts.alice.pubKey],
+        zkAddressesToObserve: [accounts.alice.zkAddress],
         addressesToObserve: [address.USER_A],
       })
       await lightSyncGrove.init()
       await lightSyncGrove.applyBootstrap(bootstrapData)
       expect(
-        lightSyncGrove
-          .latestUTXOTree()
-          .root()
-          .eq(fullSyncGrvoe.latestUTXOTree().root()),
+        lightSyncGrove.utxoTree.root().eq(fullSyncGrvoe.utxoTree.root()),
       ).toBe(true)
       expect(
-        lightSyncGrove
-          .latestUTXOTree()
+        lightSyncGrove.utxoTree
           .latestLeafIndex()
-          .eq(fullSyncGrvoe.latestUTXOTree().latestLeafIndex()),
+          .eq(fullSyncGrvoe.utxoTree.latestLeafIndex()),
       ).toBe(true)
       expect(
-        lightSyncGrove
-          .latestWithdrawalTree()
+        lightSyncGrove.withdrawalTree
           .root()
-          .eq(fullSyncGrvoe.latestWithdrawalTree().root()),
+          .eq(fullSyncGrvoe.withdrawalTree.root()),
       ).toBe(true)
       expect(
-        lightSyncGrove
-          .latestWithdrawalTree()
+        lightSyncGrove.withdrawalTree
           .latestLeafIndex()
-          .eq(fullSyncGrvoe.latestWithdrawalTree().latestLeafIndex()),
+          .eq(fullSyncGrvoe.withdrawalTree.latestLeafIndex()),
       ).toBe(true)
       await mockup.terminate()
     })

@@ -6,6 +6,7 @@ import { SingleBar } from 'cli-progress'
 import { https } from 'follow-redirects'
 import { Writable } from 'stream'
 import Configurator, { Context, Menu } from '../configurator'
+import { DEFAULT } from '../../../../config'
 
 export const downloadKeys = async (
   url: string,
@@ -59,11 +60,7 @@ export default class DownloadKeys extends Configurator {
     }
     fs.mkdirpSync(pwd)
     try {
-      await downloadKeys(
-        'https://zkopru.azureedge.net/snarkkeys/arctic-roll/1-0-0/keys.tgz',
-        pwd,
-        process.stdout,
-      )
+      await downloadKeys(DEFAULT.snarkkeys, pwd, process.stdout)
       this.print(chalk.green('Download completed'))
       return {
         context,

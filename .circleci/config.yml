@@ -1,6 +1,4 @@
 version: 2.1
-orbs:
-  node: circleci/node@4.1.0
 workflows:
   test_app:
     jobs:
@@ -10,5 +8,6 @@ jobs:
     machine: true
     steps:
       - checkout
+      - run: curl -o- -L https://yarnpkg.com/install.sh | bash
       - run: yarn
       - run: yarn images:pull

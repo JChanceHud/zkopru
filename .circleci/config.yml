@@ -5,7 +5,7 @@ workflows:
       - build
 jobs:
   build:
-    machine: true
+    machine:
       image: ubuntu-2004:202010-01
       steps:
         - checkout

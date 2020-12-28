@@ -9,5 +9,6 @@ jobs:
     steps:
       - checkout
       - run: curl -o- -L https://yarnpkg.com/install.sh | bash
+      - run: source /home/circleci/.bashrc
       - run: yarn
       - run: yarn images:pull

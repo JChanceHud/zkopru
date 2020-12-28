@@ -7,9 +7,9 @@ jobs:
   build:
     machine:
       image: ubuntu-2004:202010-01
-      steps:
-        - checkout
-        - run: curl -o- -L https://yarnpkg.com/install.sh | bash
-        - run: source /home/circleci/.bashrc
-        - run: yarn
-        - run: yarn images:pull
+    steps:
+      - checkout
+      - run: curl -o- -L https://yarnpkg.com/install.sh | bash
+      - run: source /home/circleci/.bashrc
+      - run: yarn
+      - run: yarn images:pull

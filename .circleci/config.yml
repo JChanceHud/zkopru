@@ -1,0 +1,14 @@
+version: 2.1
+orbs:
+  node: circleci/node@4.1.0
+workflows:
+  test_app:
+    jobs:
+      - build
+jobs:
+  build:
+    machine: true
+    steps:
+      - checkout
+      - run: yarn
+      - run: yarn images:pull

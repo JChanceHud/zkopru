@@ -13,3 +13,6 @@ jobs:
       - run: source /home/circleci/.bashrc
       - run: yarn
       - run: yarn images:pull
+      - run: yarn lint
+      - run: yarn build
+      - run: yarn test

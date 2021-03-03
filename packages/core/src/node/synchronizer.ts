@@ -209,7 +209,6 @@ export class Synchronizer extends EventEmitter {
 
           await this.db.create('Proposal', {
             hash: blockHash,
-            block: { create: { header: { create: header } } },
             proposalNum: 0,
             proposedAt: blockNumber,
             proposalTx: transactionHash,

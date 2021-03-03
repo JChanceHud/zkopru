@@ -179,7 +179,7 @@ export class ZkopruNode {
       const proposals = await this.db.findMany('Proposal', {
         where: {
           proposalNum: x,
-        }
+        },
       })
       if (proposals.length !== 1) {
         throw new Error(`Did not find one proposal for number: ${x}`)
@@ -188,7 +188,7 @@ export class ZkopruNode {
       const { hash } = proposal
       if (x === 0) {
         await this.db.update('Proposal', {
-          where: { hash, },
+          where: { hash },
           update: { canonicalNum: 0 },
         })
         // eslint-disable-next-line no-continue
@@ -203,7 +203,7 @@ export class ZkopruNode {
       const parent = await this.db.findOne('Proposal', {
         where: {
           hash: header.parentBlock.toString(),
-        }
+        },
       })
       if (!parent) {
         throw new Error(`Unable to find parent proposal`)

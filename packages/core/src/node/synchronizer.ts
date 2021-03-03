@@ -228,7 +228,7 @@ export class Synchronizer extends EventEmitter {
   async listenTokenRegistry() {
     const lastRegistration = await this.db.findMany('TokenRegistry', {
       where: {},
-      orderBy: { blockNumber: 'desc', },
+      orderBy: { blockNumber: 'desc' },
       limit: 1,
     })
     const fromBlock = lastRegistration[0]?.blockNumber || 0
@@ -569,8 +569,8 @@ export class Synchronizer extends EventEmitter {
         },
       })
       await this.db.upsert('Block', {
-        where: { hash: header.hash, },
-        create: { hash: header.hash, },
+        where: { hash: header.hash },
+        create: { hash: header.hash },
         update: {},
       })
       await this.db.upsert('Header', {

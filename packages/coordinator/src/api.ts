@@ -262,13 +262,11 @@ export class CoordinatorApi {
       siblings: JSON.stringify(withdrawal.siblings),
       status: WithdrawalStatus.UNFINALIZED,
     }
-    await layer2.db.write(prisma =>
-      prisma.withdrawal.upsert({
-        where: { hash },
-        create: data,
-        update: data,
-      }),
-    )
+    await layer2.db.upsert('Withdrawal', {
+      where: { hash },
+      create: data,
+      update: data,
+    })
     res.send(signedTx)
   }
 

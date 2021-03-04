@@ -1,7 +1,7 @@
 import Web3 from 'web3'
 import { Account, EncryptedKeystoreV3Json, AddAccount } from 'web3-core'
 import { Field, Point, EdDSA, signEdDSA, verifyEdDSA } from '@zkopru/babyjubjub'
-import { Keystore } from '@zkopru/prisma'
+import { Keystore } from '@zkopru/database'
 import { hexify } from '@zkopru/utils'
 import createKeccak from 'keccak'
 import assert from 'assert'
